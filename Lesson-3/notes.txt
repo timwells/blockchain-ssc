@@ -1,0 +1,5 @@
+ChainLink
+https://data.chain.link/
+
+Fund ETH to use Kovan faucet: https://faucets.chain.link/kovan
+ 
