@@ -3,14 +3,29 @@
 pragma solidity ^0.6.6 <0.9.0;
 
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+import "@chainlink/contracts/src/v0.6/vendor/SafeMathChainlink.sol";
 
 contract FundMe {
+    using SafeMathChainlink for uint256;
     
     mapping(address => uint256) public addressToAmountFunded;
     
+    address[] public funders;
+    
+    // constructor
+    address public owner;
+
+    constructor() public {
+        owner = msg.sender;
+    }
+    
     function fund() public payable {
-         addressToAmountFunded[msg.sender] += msg.value;
-         // ETH -> USD conversion rate
+        // Min $50
+        uint256 minimumUSD = 50 * (10 ** 18);
+        require(getConversionRate(msg.value) >= minimumUSD,"You need to spend more ETH!");
+        addressToAmountFunded[msg.sender] += msg.value;
+        
+        funders.push(msg.sender);
     }
     
     function getVersion() public view returns(uint256) {
@@ -31,5 +46,21 @@ contract FundMe {
         return ethAmountInUSD;
         
         // 4514.7202162000
+    }
+    
+    modifier onlyOwner {
+     require(msg.sender == owner,"Sorry you are not the contract owner!");
+      _;
+    }
+
+    function withdraw() payable onlyOwner public {
+        msg.sender.transfer(address(this).balance);
+        
+        for(uint256 funderIndex=0; funderIndex < funders.length; funderIndex++) {
+            address funder = funders[funderIndex];
+            addressToAmountFunded[funder] = 0;
+        }
+        
+        funders = new address[](0);
     }
 }
